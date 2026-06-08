@@ -34,6 +34,7 @@ set(STREAM_SOURCES
     src/stream/FileStream.hpp
     src/stream/FileStream.cpp
     src/stream/Deserializer.hpp
+    src/stream/Deserializer.cpp
 )
 
 set(TESTDATA_SOURCES
@@ -69,6 +70,8 @@ add_executable(Lab4Tests
     tests/test_lazy_sequence.cpp
     tests/test_stream.cpp
     tests/test_smart_generator.cpp
+    tests/test_predefined_data.cpp
+    tests/test_large_scale.cpp
 )
 
 target_link_libraries(Lab4Tests

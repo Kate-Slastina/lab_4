@@ -12,7 +12,6 @@ private:
     size_t currentIndex_;
 
 public:
-    using iterator_category = std::forward_iterator_tag;
     using value_type = T;
     using difference_type = std::ptrdiff_t;
     using pointer = T*;

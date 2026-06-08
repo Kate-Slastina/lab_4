@@ -14,15 +14,13 @@ private:
 public:
     ReadOnlyStream() : source_(nullptr), position_(0), isOpen_(false) {}
 
-    // Владеет переданной последовательностью
+
     explicit ReadOnlyStream(std::unique_ptr<LazySequence<T>> seq)
         : source_(std::move(seq)), position_(0), isOpen_(false) {}
 
-    // Удобный конструктор от сырого указателя (владеет)
     explicit ReadOnlyStream(LazySequence<T>* seq)
         : source_(seq), position_(0), isOpen_(false) {}
 
-    // Конструктор от Sequence (копирует данные)
     explicit ReadOnlyStream(Sequence<T>* seq)
         : source_(std::make_unique<LazySequence<T>>(seq)), position_(0), isOpen_(false) {}
 

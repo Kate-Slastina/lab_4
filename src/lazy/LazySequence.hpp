@@ -69,7 +69,6 @@ public:
     }
 };
 
-// -------------------------- Операции над генераторами --------------------------
 
 template<typename T>
 class AppendGenerator : public IGenerator<T> {
@@ -271,7 +270,6 @@ public:
     }
 };
 
-// -------------------------- LazySequence --------------------------
 
 template<typename T>
 class LazySequence {
@@ -330,19 +328,34 @@ public:
         : LazySequence([func, idx = size_t(0)]() mutable { return func(idx++); }) {}
 
     // Получение элемента (материализует при необходимости)
-    T Get(size_t index) {
-        if (knownLength_ != static_cast<size_t>(-1) && index >= knownLength_)
-            throw IndexOutOfRange();
-        if (index < cache_.size())
-            return cache_[index];
-        while (cache_.size() <= index) {
+    static constexpr size_t MAX_CACHE_SIZE = 1'000'000; // 1млн
+
+T Get(size_t index) {
+    if (knownLength_ != static_cast<size_t>(-1) && index >= knownLength_)
+        throw IndexOutOfRange();
+    if (index < cache_.size())
+        return cache_[index];
+    // Если последовательность бесконечная, но кэш уже слишком велик,
+    // предотвращаем дальнейший рост (генерируем on‑fly без сохранения)
+    if (!isFinite_ && cache_.size() >= MAX_CACHE_SIZE) {
+        // достраиваем до нужного индекса, не сохраняя в cache_
+        size_t need = index - cache_.size() + 1;
+        for (size_t i = 0; i < need; ++i) {
             if (!generator_->HasNext())
                 throw IndexOutOfRange();
             T next = generator_->GetNext();
-            cache_.push_back(next);
+            // не добавляем в cache_, если превышен лимит
+            if (i == need-1) return next;
         }
-        return cache_[index];
     }
+    while (cache_.size() <= index) {
+        if (!generator_->HasNext())
+            throw IndexOutOfRange();
+        T next = generator_->GetNext();
+        cache_.push_back(next);
+    }
+    return cache_[index];
+}
 
     size_t GetLength() const { return knownLength_; }
     bool IsFinite() const { return isFinite_; }
@@ -431,8 +444,7 @@ public:
         return new LazySequence<T>(filterGen, false, static_cast<size_t>(-1));
     }
 
-    // Итераторы (опционально)
-    // ...
+
 
     ~LazySequence() = default;
 };

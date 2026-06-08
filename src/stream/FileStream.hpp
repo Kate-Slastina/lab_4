@@ -3,6 +3,7 @@
 #include "Deserializer.hpp"
 #include <fstream>
 #include <string>
+#include <vector>
 
 template<typename T>
 class FileStream : public ReadOnlyStream<T> {
@@ -13,8 +14,10 @@ private:
     size_t position_;
     size_t fileSizeElements_;
     bool seekable_;
+    std::vector<std::streampos> linePositions_;   // для быстрого Seek
 
     T ReadFromFile();
+    void BuildIndex();
 
 public:
     FileStream(const std::string& filename, Deserializer<T> deser, bool seekable = true);

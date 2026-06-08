@@ -9,17 +9,35 @@ FileStream<T>::FileStream(const std::string& filename, Deserializer<T> deser, bo
 }
 
 template<typename T>
+void FileStream<T>::BuildIndex() {
+    if (!seekable_) return;
+    linePositions_.clear();
+    file_.clear();
+    file_.seekg(0);
+    std::streampos pos = file_.tellg();
+    linePositions_.push_back(pos);
+    std::string dummy;
+    while (std::getline(file_, dummy)) {
+        pos = file_.tellg();
+        linePositions_.push_back(pos);
+    }
+    file_.clear();
+    file_.seekg(0);
+    if (!linePositions_.empty())
+        fileSizeElements_ = linePositions_.size() - 1;
+    else
+        fileSizeElements_ = 0;
+}
+
+template<typename T>
 void FileStream<T>::Open() {
     if (file_.is_open()) return;
     file_.open(filename_);
     if (!file_.is_open())
         throw LabException("Cannot open file: " + filename_);
-
     if (seekable_) {
-        std::streampos original = file_.tellg();
-        file_.seekg(0, std::ios::end);
-        std::streamsize totalBytes = file_.tellg();
-        file_.seekg(original);
+        BuildIndex();   // один раз строим индекс позиций
+    } else {
         fileSizeElements_ = 0;
     }
 }
@@ -52,13 +70,11 @@ template<typename T>
 void FileStream<T>::Seek(size_t index) {
     if (!seekable_ || !file_.is_open())
         throw LabException("Seek not supported on this stream");
+    if (index >= fileSizeElements_)
+        throw IndexOutOfRange("Seek beyond end of file");
     file_.clear();
-    file_.seekg(0);
-    position_ = 0;
-    for (size_t i = 0; i < index; ++i) {
-        if (IsEndOfStream()) throw IndexOutOfRange("Seek beyond end of file");
-        Read();
-    }
+    file_.seekg(linePositions_[index]);
+    position_ = index;
 }
 
 template<typename T>
