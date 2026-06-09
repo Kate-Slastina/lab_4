@@ -1,14 +1,14 @@
 #pragma once
 #include "IGenerator.hpp"
-#include <memory>
+#include "../my/my_shared_ptr.hpp"
 
 template<typename T>
 class SkipGenerator : public IGenerator<T> {
-    std::shared_ptr<IGenerator<T>> base;
+      SharedPtr<IGenerator<T>> base;
     size_t skipCount;
     size_t skipped;
 public:
-    SkipGenerator(std::shared_ptr<IGenerator<T>> b, size_t count)
+    SkipGenerator(  SharedPtr<IGenerator<T>> b, size_t count)
         : base(b), skipCount(count), skipped(0) {}
     T GetNext() override {
         while (skipped < skipCount && base->HasNext()) {
@@ -23,6 +23,7 @@ public:
         return base->HasNext();
     }
     Optional<T> TryGetNext() override {
-        try { return Optional<T>(GetNext()); } catch (...) { return Optional<T>(); }
+        try { return Optional<T>(GetNext()); }
+        catch (...) { return Optional<T>(); }
     }
 };

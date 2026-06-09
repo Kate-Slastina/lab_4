@@ -1,6 +1,12 @@
 #pragma once
+#include "../my/my_function.hpp" // не нужно, просто заглушка
 #include <stdexcept>
 
+namespace my {
+    template<typename T> class Optional; // объявление из my_optional (но у нас нет my_optional, определим здесь)
+}
+
+// Простейшая реализация Optional (можно взять из предыдущего проекта)
 template<typename T>
 class Optional {
 private:

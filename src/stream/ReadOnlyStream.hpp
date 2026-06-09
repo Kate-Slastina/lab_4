@@ -2,27 +2,26 @@
 #include "Stream.hpp"
 #include "lazy/LazySequence.hpp"
 #include "core/Sequence.hpp"
-#include <memory>
+#include "../my/my_shared_ptr.hpp"
 
 template<typename T>
 class ReadOnlyStream : public Stream<T> {
 private:
-    std::unique_ptr<LazySequence<T>> source_;
+      SharedPtr<LazySequence<T>> source_;
     size_t position_;
     bool isOpen_;
 
 public:
     ReadOnlyStream() : source_(nullptr), position_(0), isOpen_(false) {}
 
-
-    explicit ReadOnlyStream(std::unique_ptr<LazySequence<T>> seq)
-        : source_(std::move(seq)), position_(0), isOpen_(false) {}
-
-    explicit ReadOnlyStream(LazySequence<T>* seq)
+    ReadOnlyStream(  SharedPtr<LazySequence<T>> seq)
         : source_(seq), position_(0), isOpen_(false) {}
 
-    explicit ReadOnlyStream(Sequence<T>* seq)
-        : source_(std::make_unique<LazySequence<T>>(seq)), position_(0), isOpen_(false) {}
+    ReadOnlyStream(LazySequence<T>* seq)
+        : source_(seq), position_(0), isOpen_(false) {}
+
+    ReadOnlyStream(Sequence<T>* seq)
+        : source_(  SharedPtr<LazySequence<T>>(new LazySequence<T>(seq))), position_(0), isOpen_(false) {}
 
     ReadOnlyStream(const ReadOnlyStream&) = delete;
     ReadOnlyStream& operator=(const ReadOnlyStream&) = delete;

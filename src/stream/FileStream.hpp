@@ -14,7 +14,7 @@ private:
     size_t position_;
     size_t fileSizeElements_;
     bool seekable_;
-    std::vector<std::streampos> linePositions_;   // для быстрого Seek
+    std::vector<std::streampos> linePositions_;
 
     T ReadFromFile();
     void BuildIndex();

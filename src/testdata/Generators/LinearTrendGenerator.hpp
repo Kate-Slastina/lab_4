@@ -1,6 +1,6 @@
 #pragma once
-#include <random>
-#include <functional>
+#include "../../my/my_random.hpp"
+#include "../../my/my_distributions.hpp"
 #include <cmath>
 
 template<typename T = double>
@@ -9,12 +9,12 @@ private:
     double a_;
     double b_;
     double noiseSigma_;
-    mutable std::mt19937 rng_;
-    mutable std::normal_distribution<double> noiseDist_;
+    mutable   LCG rng_;
+    mutable NormalDist noiseDist_;
     size_t index_;
 
 public:
-    LinearTrendGenerator(double intercept, double slope, double noiseSigma = 0.0, unsigned seed = std::random_device{}())
+    LinearTrendGenerator(double intercept, double slope, double noiseSigma = 0.0, unsigned seed = 42)
         : a_(intercept), b_(slope), noiseSigma_(noiseSigma), rng_(seed), noiseDist_(0.0, noiseSigma), index_(0) {}
 
     T next() {

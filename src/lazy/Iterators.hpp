@@ -17,7 +17,7 @@ public:
     using pointer = T*;
     using reference = T&;
 
-    explicit LazySequenceIterator(LazySequence<T>* seq, size_t startIndex = 0)
+    LazySequenceIterator(LazySequence<T>* seq, size_t startIndex = 0)
         : sequence_(seq), currentIndex_(startIndex) {}
 
     T operator*() const {

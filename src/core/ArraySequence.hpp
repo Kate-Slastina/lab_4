@@ -44,7 +44,7 @@ public:
         if (startIndex > endIndex || endIndex >= data_.GetSize()) throw IndexOutOfRange();
         auto* sub = new ArraySequence<T>();
         for (size_t i = startIndex; i <= endIndex; ++i)
-            sub->Append(data_[i]);
+            sub->AppendInPlace(data_[i]);
         return sub;
     }
 

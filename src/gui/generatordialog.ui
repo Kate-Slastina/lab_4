@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GeneratorDialog</class>
+ <widget class="QDialog" name="GeneratorDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>620</width>
+    <height>690</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Генератор данных</string>
+  </property>
+  <widget class="QWidget" name="verticalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>580</width>
+     <height>630</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QComboBox" name="comboBox"/>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="stepLayout">
+        <item>
+         <widget class="QLabel" name="labelStep">
+          <property name="text">
+           <string>Шаг (для функций, 0.01-1.0):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="doubleSpinBoxStep">
+          <property name="minimum">
+           <double>0.01</double>
+          </property>
+          <property name="maximum">
+           <double>1.0</double>
+          </property>
+          <property name="singleStep">
+           <double>0.01</double>
+          </property>
+          <property name="value">
+           <double>1.0</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="parametersLayout">
+        <!-- Линейная функция -->
+        <item>
+         <widget class="QWidget" name="widgetLinearParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="linearLayout">
+           <item><widget class="QLabel" name="labelK"><property name="text"><string>k (наклон):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxLinearK"><property name="value"><double>1.0</double></property><property name="singleStep"><double>0.1</double></property></widget></item>
+           <item><widget class="QLabel" name="labelB"><property name="text"><string>b (свободный):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxLinearB"><property name="value"><double>0.0</double></property><property name="singleStep"><double>0.1</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Квадратичная функция -->
+        <item>
+         <widget class="QWidget" name="widgetQuadParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="quadLayout">
+           <item><widget class="QLabel" name="labelA"><property name="text"><string>a:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxQuadA"><property name="value"><double>1.0</double></property><property name="decimals"><number>3</number></property></widget></item>
+           <item><widget class="QLabel" name="labelB"><property name="text"><string>b:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxQuadB"><property name="value"><double>0.0</double></property></widget></item>
+           <item><widget class="QLabel" name="labelC"><property name="text"><string>c:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxQuadC"><property name="value"><double>0.0</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Синусоидальная функция -->
+        <item>
+         <widget class="QWidget" name="widgetSinParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="sinLayout">
+           <item><widget class="QLabel" name="labelAmp"><property name="text"><string>Амплитуда:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxSinAmp"><property name="value"><double>1.0</double></property></widget></item>
+           <item><widget class="QLabel" name="labelFreq"><property name="text"><string>Частота:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxSinFreq"><property name="value"><double>0.1</double></property><property name="singleStep"><double>0.01</double></property></widget></item>
+           <item><widget class="QLabel" name="labelPhase"><property name="text"><string>Фаза:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxSinPhase"><property name="value"><double>0.0</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Шум (нормальный) -->
+        <item>
+         <widget class="QWidget" name="widgetNoiseParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="noiseLayout">
+           <item><widget class="QLabel" name="labelStd"><property name="text"><string>Стандартное отклонение:</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxNoiseStd"><property name="value"><double>1.0</double></property><property name="minimum"><double>0.01</double></property><property name="singleStep"><double>0.1</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Uniform -->
+        <item>
+         <widget class="QWidget" name="widgetUniformParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="uniformLayout">
+           <item><widget class="QLabel" name="labelUniformLow"><property name="text"><string>a (нижняя граница):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxUniformLow"><property name="value"><double>0.0</double></property></widget></item>
+           <item><widget class="QLabel" name="labelUniformHigh"><property name="text"><string>b (верхняя граница):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxUniformHigh"><property name="value"><double>1.0</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Normal -->
+        <item>
+         <widget class="QWidget" name="widgetNormalParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="normalLayout">
+           <item><widget class="QLabel" name="labelNormalMu"><property name="text"><string>μ (среднее):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxNormalMu"><property name="value"><double>0.0</double></property></widget></item>
+           <item><widget class="QLabel" name="labelNormalSigma"><property name="text"><string>σ (стд. отклонение):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxNormalSigma"><property name="value"><double>1.0</double></property><property name="minimum"><double>0.01</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Exponential -->
+        <item>
+         <widget class="QWidget" name="widgetExponentialParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="exponentialLayout">
+           <item><widget class="QLabel" name="labelExponentialLambda"><property name="text"><string>λ (интенсивность):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxExponentialLambda"><property name="value"><double>1.0</double></property><property name="minimum"><double>0.01</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Poisson -->
+        <item>
+         <widget class="QWidget" name="widgetPoissonParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="poissonLayout">
+           <item><widget class="QLabel" name="labelPoissonLambda"><property name="text"><string>λ (среднее):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxPoissonLambda"><property name="value"><double>1.0</double></property><property name="minimum"><double>0.01</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Cauchy -->
+        <item>
+         <widget class="QWidget" name="widgetCauchyParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="cauchyLayout">
+           <item><widget class="QLabel" name="labelCauchyX0"><property name="text"><string>x₀ (медиана):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxCauchyX0"><property name="value"><double>0.0</double></property></widget></item>
+           <item><widget class="QLabel" name="labelCauchyGamma"><property name="text"><string>γ (масштаб):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxCauchyGamma"><property name="value"><double>1.0</double></property><property name="minimum"><double>0.01</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <!-- Bernoulli -->
+        <item>
+         <widget class="QWidget" name="widgetBernoulliParams">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="bernoulliLayout">
+           <item><widget class="QLabel" name="labelBernoulliP"><property name="text"><string>p (вероятность успеха):</string></property></widget></item>
+           <item><widget class="QDoubleSpinBox" name="doubleSpinBoxBernoulliP"><property name="value"><double>0.5</double></property><property name="minimum"><double>0.0</double></property><property name="maximum"><double>1.0</double></property><property name="singleStep"><double>0.1</double></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_1">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_3">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>650</y>
+     <width>560</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item><widget class="QPushButton" name="buttonCancel"><property name="text"><string>Cancel</string></property></widget></item>
+    <item><widget class="QPushButton" name="buttonGenerate"><property name="text"><string>Generate</string></property></widget></item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

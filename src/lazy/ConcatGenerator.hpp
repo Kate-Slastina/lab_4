@@ -1,16 +1,15 @@
 #pragma once
 #include "IGenerator.hpp"
-#include <memory>
+#include "../my/my_shared_ptr.hpp"
 
 template<typename T>
 class ConcatGenerator : public IGenerator<T> {
-private:
-    std::shared_ptr<IGenerator<T>> first_;
-    std::shared_ptr<IGenerator<T>> second_;
+      SharedPtr<IGenerator<T>> first_;
+      SharedPtr<IGenerator<T>> second_;
     bool firstExhausted_;
 
 public:
-    ConcatGenerator(std::shared_ptr<IGenerator<T>> first, std::shared_ptr<IGenerator<T>> second)
+    ConcatGenerator(  SharedPtr<IGenerator<T>> first,   SharedPtr<IGenerator<T>> second)
         : first_(first), second_(second), firstExhausted_(false) {}
 
     T GetNext() override {

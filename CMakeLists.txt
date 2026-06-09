@@ -1,14 +1,23 @@
 cmake_minimum_required(VERSION 3.14)
-project(Lab4 VERSION 1.0 LANGUAGES CXX)
+project(Lab4GUI VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOUIC ON)
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
-endif()
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Charts)
+qt6_standard_project_setup()
 
+# Самодельные контейнеры
+set(MY_SOURCES
+    src/my/my_array.hpp
+    src/my/my_shared_ptr.hpp
+    src/my/my_function.hpp
+    src/my/my_random.hpp
+    src/my/my_distributions.hpp
+)
+
+# Core
 set(CORE_SOURCES
     src/core/Sequence.hpp
     src/core/Optional.hpp
@@ -19,70 +28,43 @@ set(CORE_SOURCES
     src/core/MutableArraySequence.hpp
 )
 
+# Lazy
 set(LAZY_SOURCES
-    src/lazy/LazySequence.hpp
     src/lazy/IGenerator.hpp
-    src/lazy/DefaultGenerator.hpp
-    src/lazy/SkipGenerator.hpp
-    src/lazy/ConcatGenerator.hpp
+    src/lazy/LazySequence.hpp
     src/lazy/Iterators.hpp
 )
 
-set(STREAM_SOURCES
-    src/stream/Stream.hpp
-    src/stream/ReadOnlyStream.hpp
-    src/stream/FileStream.hpp
-    src/stream/FileStream.cpp
-    src/stream/Deserializer.hpp
-    src/stream/Deserializer.cpp
+# GUI
+set(GUI_SOURCES
+    src/gui/mainwindow.cpp
+    src/gui/mainwindow.h
+    src/gui/mainwindow.ui
+    src/gui/generatordialog.cpp
+    src/gui/generatordialog.h
+    src/gui/generatordialog.ui
+    src/gui/value_provider.cpp
+    src/gui/value_provider.hpp
+    src/main.cpp
 )
 
-set(TESTDATA_SOURCES
-    src/testdata/SmartTestDataGenerator.hpp
-    src/testdata/SmartTestDataGenerator.cpp
-    src/testdata/Distribution.hpp
-    src/testdata/SequenceProperty.hpp
-    src/testdata/Generators/LinearTrendGenerator.hpp
-    src/testdata/Generators/RandomWalkGenerator.hpp
-    src/testdata/Generators/PeriodicGenerator.hpp
-    src/testdata/Generators/CompositeGenerator.hpp
-)
-
-add_library(Lab4Core STATIC
+qt_add_executable(Lab4GUI
+    ${MY_SOURCES}
     ${CORE_SOURCES}
     ${LAZY_SOURCES}
-    ${STREAM_SOURCES}
-    ${TESTDATA_SOURCES}
+    ${GUI_SOURCES}
 )
 
-target_include_directories(Lab4Core PUBLIC
+target_include_directories(Lab4GUI PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lazy
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/stream
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/testdata
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/my
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-enable_testing()
-find_package(GTest REQUIRED)
+target_link_libraries(Lab4GUI PRIVATE Qt::Core Qt::Widgets Qt::Charts)
 
-add_executable(Lab4Tests
-    tests/test_lazy_sequence.cpp
-    tests/test_stream.cpp
-    tests/test_smart_generator.cpp
-    tests/test_predefined_data.cpp
-    tests/test_large_scale.cpp
-)
-
-target_link_libraries(Lab4Tests
-    Lab4Core
-    GTest::gtest
-    GTest::gtest_main
-)
-
-target_include_directories(Lab4Tests PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests
-)
-
-add_test(NAME Lab4Tests COMMAND Lab4Tests)
+qt_generate_deploy_app_script(TARGET Lab4GUI OUTPUT_SCRIPT deploy_script NO_UNSUPPORTED_PLATFORM_ERROR)
+install(SCRIPT ${deploy_script})

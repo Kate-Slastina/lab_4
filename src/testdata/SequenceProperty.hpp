@@ -1,6 +1,5 @@
 #pragma once
-#include <functional>
-#include <vector>
+#include "../my/my_array.hpp"
 #include <cmath>
 
 enum class PropertyType {
@@ -15,12 +14,12 @@ enum class PropertyType {
 
 struct SequenceProperty {
     PropertyType type;
-    std::vector<double> parameters;
+      Array<double> parameters;
 
-    SequenceProperty(PropertyType t, const std::vector<double>& params = {})
+    SequenceProperty(PropertyType t, const   Array<double>& params =   Array<double>())
         : type(t), parameters(params) {}
 
-    double Apply(size_t index, double originalValue) const {
+    double Apply(size_t index, double originalValue,   LCG& rng) const {
         double result = originalValue;
         switch (type) {
             case PropertyType::LinearTrend:
@@ -38,6 +37,16 @@ struct SequenceProperty {
                     double phase = parameters[2];
                     result += A * std::sin(2.0 * M_PI * freq * index + phase);
                 }
+                break;
+            case PropertyType::Noise:
+                if (parameters.size() >= 1) {
+                    double sigma = parameters[0];
+                      NormalDist noise(0.0, sigma);
+                    result += noise(rng);
+                }
+                break;
+            case PropertyType::Outliers:
+                // обрабатывается отдельно
                 break;
             default: break;
         }

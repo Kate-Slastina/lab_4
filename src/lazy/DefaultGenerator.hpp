@@ -2,21 +2,21 @@
 #include "IGenerator.hpp"
 #include "core/Sequence.hpp"
 #include "core/MutableArraySequence.hpp"
-#include <functional>
-#include <memory>
+#include "../my/my_function.hpp"
+#include "../my/my_shared_ptr.hpp"
 
 template<typename T>
 class DefaultGenerator : public IGenerator<T> {
 private:
-    std::function<T(const Sequence<T>&)> recurrence_;
-    std::unique_ptr<MutableArraySequence<T>> previous_;
+      Function<T(const Sequence<T>&)> recurrence_;
+      SharedPtr<MutableArraySequence<T>> previous_;
     size_t arity_;
     bool isInfinite_;
 
 public:
-    DefaultGenerator(std::function<T(const Sequence<T>&)> recurrence, size_t arity, bool infinite = true)
+    DefaultGenerator(  Function<T(const Sequence<T>&)> recurrence, size_t arity, bool infinite = true)
         : recurrence_(recurrence), arity_(arity), isInfinite_(infinite) {
-        previous_ = std::make_unique<MutableArraySequence<T>>();
+        previous_ =   SharedPtr<MutableArraySequence<T>>(new MutableArraySequence<T>());
     }
 
     void SetInitial(const Sequence<T>& init) {

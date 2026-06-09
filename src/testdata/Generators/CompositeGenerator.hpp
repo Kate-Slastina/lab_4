@@ -1,18 +1,18 @@
 #pragma once
-#include <functional>
-#include <vector>
-#include <memory>
+#include "../../my/my_array.hpp"
+#include "../../my/my_function.hpp"
 
 template<typename T = double>
 class CompositeGenerator {
 private:
-    std::vector<std::function<T()>> generators_;
-    std::function<T(T, T)> combiner_;
+      Array<  Function<T()>> generators_;
+      Function<T(T,T)> combiner_;
     size_t index_;
 
 public:
-    CompositeGenerator(std::vector<std::function<T()>> gens, std::function<T(T,T)> combine = [](T a, T b) { return a + b; })
-        : generators_(std::move(gens)), combiner_(combine), index_(0) {}
+    CompositeGenerator(const   Array<  Function<T()>>& gens,
+                         Function<T(T,T)> combine = [](T a, T b) { return a + b; })
+        : generators_(gens), combiner_(combine), index_(0) {}
 
     T next() {
         if (generators_.empty()) return T(0);

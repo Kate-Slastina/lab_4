@@ -1,6 +1,5 @@
 #pragma once
 #include <cmath>
-#include <functional>
 
 enum class Waveform {
     Sine,
@@ -18,7 +17,6 @@ private:
     double phase_;
     double offset_;
     size_t index_;
-    std::function<double(double)> waveformFunc_;
 
     static double sineFunc(double x) { return std::sin(x); }
     static double squareFunc(double x) { return std::sin(x) >= 0 ? 1.0 : -1.0; }
@@ -33,25 +31,25 @@ private:
 
 public:
     PeriodicGenerator(Waveform wf, double amplitude, double frequency, double phase = 0.0, double offset = 0.0)
-        : waveform_(wf), amplitude_(amplitude), frequency_(frequency), phase_(phase), offset_(offset), index_(0)
-    {
-        switch (wf) {
-            case Waveform::Sine:     waveformFunc_ = sineFunc; break;
-            case Waveform::Square:   waveformFunc_ = squareFunc; break;
-            case Waveform::Sawtooth: waveformFunc_ = sawtoothFunc; break;
-            case Waveform::Triangle: waveformFunc_ = triangleFunc; break;
-        }
-    }
+        : waveform_(wf), amplitude_(amplitude), frequency_(frequency), phase_(phase), offset_(offset), index_(0) {}
 
     T next() {
         double t = static_cast<double>(index_);
         double argument = 2.0 * M_PI * frequency_ * t + phase_;
-        double value = amplitude_ * waveformFunc_(argument) + offset_;
+        double value;
+        switch (waveform_) {
+            case Waveform::Sine:     value = sineFunc(argument); break;
+            case Waveform::Square:   value = squareFunc(argument); break;
+            case Waveform::Sawtooth: value = sawtoothFunc(argument); break;
+            case Waveform::Triangle: value = triangleFunc(argument); break;
+            default: value = 0.0;
+        }
+        value = amplitude_ * value + offset_;
         ++index_;
         return static_cast<T>(value);
     }
 
-    T operator()() { return next(); }
     void reset() { index_ = 0; }
+    T operator()() { return next(); }
     size_t index() const { return index_; }
 };
