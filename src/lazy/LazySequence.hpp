@@ -5,7 +5,7 @@
 #include "IGenerator.hpp"
 #include "core/Exceptions.hpp"
 
-// -------------------------- Базовые генераторы (без изменений) --------------------------
+// -------------------------- Базовые генераторы --------------------------
 template<typename T>
 class EmptyGenerator : public IGenerator<T> {
 public:
@@ -228,7 +228,6 @@ public:
     }
 };
 
-// Исправленный FilterGenerator с ограничением попыток
 template<typename T>
 class FilterGenerator : public IGenerator<T> {
     SharedPtr<IGenerator<T>> base_;
@@ -273,7 +272,7 @@ public:
     }
 };
 
-// -------------------------- LazySequence (с поддержкой фабрики) --------------------------
+// -------------------------- LazySequence --------------------------
 
 template<typename T>
 class LazySequence {
@@ -282,33 +281,38 @@ private:
     SharedPtr<IGenerator<T>> generator_;
     bool isFinite_;
     size_t knownLength_;
-    Function<T()> factory_;   // для бесконечных последовательностей – исходная функция
+    Function<T()> factory_;
     static constexpr size_t MAX_CACHE_SIZE = 1000000;
 
 public:
-    // Пустая последовательность
     LazySequence()
         : generator_(SharedPtr<IGenerator<T>>(new EmptyGenerator<T>())),
           isFinite_(true), knownLength_(0) {}
 
-    // Конечная последовательность из массива
     LazySequence(const T* items, size_t count)
         : cache_(items, items + count),
           generator_(SharedPtr<IGenerator<T>>(new ArrayGenerator<T>(items, count))),
           isFinite_(true), knownLength_(count) {}
 
-    // БЕСКОНЕЧНАЯ последовательность из функции (без длины) – сохраняем фабрику
     LazySequence(Function<T()> func)
         : generator_(SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(func))),
           isFinite_(false), knownLength_(static_cast<size_t>(-1)),
           factory_(func) {}
 
-    // КОНЕЧНАЯ последовательность из функции + длина – фабрику не сохраняем
     LazySequence(Function<T()> func, size_t length)
         : generator_(SharedPtr<IGenerator<T>>(new FiniteFunctionGenerator<T>(func, length))),
           isFinite_(true), knownLength_(length) {}
 
-    // Внутренний конструктор от генератора (используется при операциях)
+    LazySequence(Function<T(size_t)> indexedFunc, size_t length = static_cast<size_t>(-1))
+        : isFinite_(length != static_cast<size_t>(-1)),
+          knownLength_(length),
+          factory_([indexedFunc, idx = size_t(0)]() mutable -> T {
+              return indexedFunc(idx++);
+          })
+    {
+        generator_ = SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(factory_));
+    }
+
     LazySequence(SharedPtr<IGenerator<T>> gen, bool finite, size_t length)
         : generator_(gen), isFinite_(finite), knownLength_(length) {}
 
@@ -352,14 +356,10 @@ public:
         return Get(knownLength_ - 1);
     }
 
-    // --- Операции, которые возвращают новую последовательность ---
-    // Для бесконечных последовательностей используем фабрику, чтобы начать с начала
-
     SharedPtr<LazySequence<T>> Append(const T& item) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: новая последовательность – конкатенация исходной (с начала) и одного элемента
-            // Но конкатенация бесконечной и конечной – бесконечная, начинающаяся с исходной. Однако Append не имеет смысла для бесконечной, т.к. элемент никогда не будет достигнут.
-            // Поэтому просто возвращаем копию.
+            // Для бесконечной последовательности Append бессмыслен (элемент никогда не будет достигнут)
+            // Возвращаем копию исходной последовательности
             return SharedPtr<LazySequence<T>>(new LazySequence<T>(factory_));
         } else {
             auto newGen = SharedPtr<IGenerator<T>>(new AppendGenerator<T>(generator_, item));
@@ -370,9 +370,15 @@ public:
 
     SharedPtr<LazySequence<T>> Prepend(const T& item) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: новая последовательность – Prepend item + исходная бесконечная (с начала)
-            auto newGen = SharedPtr<IGenerator<T>>(new PrependGenerator<T>(SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(factory_)), item));
-            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newGen, false, static_cast<size_t>(-1)));
+            // Бесконечная с фабрикой – создаём новую фабрику, которая сначала отдаёт item, потом вызывает исходную
+            Function<T()> newFactory = [baseFactory = factory_, item, first = true]() mutable -> T {
+                if (first) {
+                    first = false;
+                    return item;
+                }
+                return baseFactory();
+            };
+            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newFactory));
         } else {
             auto newGen = SharedPtr<IGenerator<T>>(new PrependGenerator<T>(generator_, item));
             size_t newLen = (knownLength_ == static_cast<size_t>(-1)) ? static_cast<size_t>(-1) : knownLength_ + 1;
@@ -382,10 +388,17 @@ public:
 
     SharedPtr<LazySequence<T>> InsertAt(size_t index, const T& item) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Для бесконечной последовательности вставка по индексу – создаём новый генератор на основе фабрики
-            auto baseGen = SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(factory_));
-            auto newGen = SharedPtr<IGenerator<T>>(new InsertGenerator<T>(baseGen, index, item));
-            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newGen, false, static_cast<size_t>(-1)));
+            // Бесконечная с фабрикой – создаём фабрику, вставляющую элемент на нужную позицию
+            Function<T()> newFactory = [baseFactory = factory_, item, index, idx = size_t(0)]() mutable -> T {
+                if (idx == index) {
+                    ++idx;
+                    return item;
+                }
+                T val = baseFactory();
+                ++idx;
+                return val;
+            };
+            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newFactory));
         } else {
             if (knownLength_ != static_cast<size_t>(-1) && index > knownLength_)
                 throw IndexOutOfRange();
@@ -397,8 +410,7 @@ public:
 
     SharedPtr<LazySequence<T>> Concat(const LazySequence<T>* other) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции + другая последовательность: результат – бесконечная, начинающаяся с исходной (с начала)
-            // Concat бесконечной с любой другой даёт бесконечную, равную исходной
+            // Конкатенация бесконечной с любой другой даёт бесконечную, равную исходной
             return SharedPtr<LazySequence<T>>(new LazySequence<T>(factory_));
         } else {
             auto concatGen = SharedPtr<IGenerator<T>>(new ConcatGenerator<T>(generator_, other->generator_));
@@ -410,19 +422,17 @@ public:
 
     SharedPtr<LazySequence<T>> SkipFirst(size_t count) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: создаём генератор, который пропускает count элементов
-            struct SkipGen {
-                Function<T()> func;
-                size_t skip;
-                mutable size_t pos = 0;
-                T operator()() const {
-                    while (pos < skip) { func(); ++pos; }
+            // Бесконечная с фабрикой – создаём фабрику, которая пропускает count элементов
+            Function<T()> newFactory = [baseFactory = factory_, count, pos = size_t(0)]() mutable -> T {
+                while (pos < count) {
+                    baseFactory();
                     ++pos;
-                    return func();
                 }
+                T val = baseFactory();
+                ++pos;
+                return val;
             };
-            SkipGen sg{factory_, count};
-            return SharedPtr<LazySequence<T>>(new LazySequence<T>(Function<T()>(sg)));
+            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newFactory));
         } else {
             if (count >= knownLength_ && knownLength_ != static_cast<size_t>(-1))
                 return SharedPtr<LazySequence<T>>(new LazySequence<T>());
@@ -434,21 +444,19 @@ public:
 
     SharedPtr<LazySequence<T>> Skip(size_t start, size_t end) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: создаём генератор, который выдаёт подпоследовательность [start, end]
-            struct RangeGen {
-                Function<T()> func;
-                size_t start, end;
-                mutable size_t pos = 0;
-                T operator()() const {
-                    while (pos < start) { func(); ++pos; }
-                    if (pos > end) throw EndOfSequence();
+            // Бесконечная с фабрикой – создаём фабрику, выдающую элементы из диапазона [start, end]
+            Function<T()> newFactory = [baseFactory = factory_, start, end, pos = size_t(0)]() mutable -> T {
+                while (pos < start) {
+                    baseFactory();
                     ++pos;
-                    return func();
                 }
+                if (pos > end) throw EndOfSequence();
+                T val = baseFactory();
+                ++pos;
+                return val;
             };
-            RangeGen rg{factory_, start, end};
             size_t len = end - start + 1;
-            return SharedPtr<LazySequence<T>>(new LazySequence<T>(Function<T()>(rg), len));
+            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newFactory, len));
         } else {
             if (start > end) throw std::invalid_argument("start must be <= end");
             if (knownLength_ != static_cast<size_t>(-1) && end >= knownLength_)
@@ -462,9 +470,14 @@ public:
     template<typename U>
     SharedPtr<LazySequence<U>> Map(Function<U(T)> f) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: создаём новый генератор на основе фабрики и применяем отображение
-            auto newGen = SharedPtr<IGenerator<U>>(new MapGenerator<T, U>(SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(factory_)), f));
-            return SharedPtr<LazySequence<U>>(new LazySequence<U>(newGen, false, static_cast<size_t>(-1)));
+            // Бесконечная с фабрикой – новая фабрика-отображение
+            Function<U()> newFactory = [baseFactory = factory_, f]() mutable -> U {
+                return f(baseFactory());
+            };
+            return SharedPtr<LazySequence<U>>(new LazySequence<U>(newFactory));
+        } else if (!isFinite_) {
+            auto mapGen = SharedPtr<IGenerator<U>>(new MapGenerator<T, U>(generator_, f));
+            return SharedPtr<LazySequence<U>>(new LazySequence<U>(mapGen, false, static_cast<size_t>(-1)));
         } else {
             auto mapGen = SharedPtr<IGenerator<U>>(new MapGenerator<T, U>(generator_, f));
             return SharedPtr<LazySequence<U>>(new LazySequence<U>(mapGen, isFinite_, knownLength_));
@@ -482,11 +495,23 @@ public:
 
     SharedPtr<LazySequence<T>> Where(Function<bool(T)> pred) const {
         if (!isFinite_ && factory_.operator bool()) {
-            // Бесконечная из функции: создаём новый FilterGenerator на основе фабрики
-            auto baseGen = SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(factory_));
-            auto filterGen = SharedPtr<IGenerator<T>>(new FilterGenerator<T>(baseGen, pred));
+            // Бесконечная с фабрикой – создаём новую фабрику-фильтр
+            Function<T()> newFactory = [baseFactory = factory_, pred]() mutable -> T {
+                while (true) {
+                    T val = baseFactory();
+                    if (pred(val)) return val;
+                }
+            };
+            return SharedPtr<LazySequence<T>>(new LazySequence<T>(newFactory));
+        } else if (!isFinite_) {
+            // Бесконечная без фабрики – оборачиваем генератор (но такого быть не должно)
+            Function<T()> newFactory = [this]() mutable -> T {
+                return generator_->GetNext();
+            };
+            auto filterGen = SharedPtr<IGenerator<T>>(new FilterGenerator<T>(SharedPtr<IGenerator<T>>(new FunctionGenerator<T>(newFactory)), pred));
             return SharedPtr<LazySequence<T>>(new LazySequence<T>(filterGen, false, static_cast<size_t>(-1)));
         } else {
+            // Конечная последовательность – используем фильтр-генератор
             auto filterGen = SharedPtr<IGenerator<T>>(new FilterGenerator<T>(generator_, pred));
             return SharedPtr<LazySequence<T>>(new LazySequence<T>(filterGen, false, static_cast<size_t>(-1)));
         }

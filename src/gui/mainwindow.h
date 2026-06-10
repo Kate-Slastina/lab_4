@@ -41,7 +41,7 @@ private:
     size_t currentOffset = 0;
     static constexpr size_t DISPLAY_SIZE = 1000;
 
-    void setCurrentSequence(SharedPtr<LazySequence<double>> newSeq, bool addToHistory = true);
+    void setCurrentSequence(SharedPtr<LazySequence<double>> newSeq, bool addToHistory = true, bool preserveOffset = false);
     void updateInfoPanel();
     void updateTable();
     void logMessage(const QString& msg);

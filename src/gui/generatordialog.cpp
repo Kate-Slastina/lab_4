@@ -67,7 +67,6 @@ GeneratorDialog::GeneratorDialog(QWidget *parent)
     connect(ui->buttonCancel, &QPushButton::clicked, this, &GeneratorDialog::reject);
     connect(ui->buttonGenerate, &QPushButton::clicked, this, &GeneratorDialog::accept);
 
-    // Соединения параметров
     connect(ui->doubleSpinBoxLinearK, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeneratorDialog::updatePreview);
     connect(ui->doubleSpinBoxLinearB, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeneratorDialog::updatePreview);
     connect(ui->doubleSpinBoxQuadA, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeneratorDialog::updatePreview);
@@ -230,6 +229,7 @@ void GeneratorDialog::updatePreview() {
     generatePreview(1000);
 }
 
+// Исправленный getGeneratedSequence с нестатическими RNG
 SharedPtr<LazySequence<double>> GeneratorDialog::getGeneratedSequence() const {
     double step = ui->doubleSpinBoxStep->value();
     int type = currentProvider;
@@ -246,41 +246,33 @@ SharedPtr<LazySequence<double>> GeneratorDialog::getGeneratedSequence() const {
             int funcType;
             double a, b, c;
             double step;
-            mutable double x;
             mutable LCG rng;
-            FunctionGen(int ft, double pa, double pb, double pc, double st)
-                : funcType(ft), a(pa), b(pb), c(pc), step(st), x(0.0), rng(static_cast<unsigned>(std::time(nullptr))) {}
-            FunctionGen(const FunctionGen& other)
-                : funcType(other.funcType), a(other.a), b(other.b), c(other.c), step(other.step),
-                  x(other.x), rng(other.rng) {}
-            double operator()() const {
-                double v = 0.0;
+            FunctionGen(int type, double p1, double p2, double p3, double st, unsigned seed = static_cast<unsigned>(std::time(nullptr)))
+                : funcType(type), a(p1), b(p2), c(p3), step(st), rng(seed) {}
+            double operator()(size_t idx) const {
+                double x = idx * step;
                 switch (funcType) {
-                case 0: v = a * x + b; break;
-                case 1: v = a * x * x + b * x + c; break;
-                case 2: v = a * std::sin(b * x + c); break;
+                case 0: return a * x + b;
+                case 1: return a * x * x + b * x + c;
+                case 2: return a * std::sin(b * x + c);
                 case 3: {
                     NormalDist noise(0.0, a);
-                    v = noise(rng);
-                    break;
+                    return noise(rng);
                 }
+                default: return 0.0;
                 }
-                x += step;
-                return v;
             }
         };
         FunctionGen gen(type, p1, p2, p3, step);
-        return SharedPtr<LazySequence<double>>(new LazySequence<double>(Function<double()>(gen)));
+        return SharedPtr<LazySequence<double>>(new LazySequence<double>(Function<double(size_t)>(gen)));
     } else {
         struct DistributionGen {
             int distType;
             double param1, param2;
             mutable LCG rng;
-            DistributionGen(int dt, double p1, double p2)
-                : distType(dt), param1(p1), param2(p2), rng(static_cast<unsigned>(std::time(nullptr))) {}
-            DistributionGen(const DistributionGen& other)
-                : distType(other.distType), param1(other.param1), param2(other.param2), rng(other.rng) {}
-            double operator()() const {
+            DistributionGen(int type, double p1, double p2, unsigned seed = static_cast<unsigned>(std::time(nullptr)))
+                : distType(type), param1(p1), param2(p2), rng(seed) {}
+            double operator()(size_t) const {
                 switch (distType) {
                 case 4: {
                     double low = param1, high = param2;
@@ -319,8 +311,7 @@ SharedPtr<LazySequence<double>> GeneratorDialog::getGeneratedSequence() const {
                     BernoulliDist dist(p);
                     return static_cast<double>(dist(rng));
                 }
-                default:
-                    return 0.0;
+                default: return 0.0;
                 }
             }
         };
@@ -335,6 +326,6 @@ SharedPtr<LazySequence<double>> GeneratorDialog::getGeneratedSequence() const {
         default: break;
         }
         DistributionGen gen(type, p1, p2);
-        return SharedPtr<LazySequence<double>>(new LazySequence<double>(Function<double()>(gen)));
+        return SharedPtr<LazySequence<double>>(new LazySequence<double>(Function<double(size_t)>(gen)));
     }
 }
